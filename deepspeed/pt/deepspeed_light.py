@@ -730,7 +730,7 @@ class DeepSpeedLight(Module):
             else:
                 self.buffered_allreduce_fallback(elements_per_buffer=bucket_size)
 
-    def backward(self, loss, allreduce_gradients=True):
+    def backward(self, loss, allreduce_gradients=True, retain_graph=False):
         r"""Execute backward pass on the loss
 
         Arguments:
@@ -770,14 +770,14 @@ class DeepSpeedLight(Module):
             self.timers('backward_inner').start()
 
         if self.zero_optimization():
-            self.optimizer.backward(loss)
+            self.optimizer.backward(loss, retain_graph=retain_graph)
         elif self.amp_enabled():
             with amp.scale_loss(loss, self.optimizer) as scaled_loss:
-                scaled_loss.backward()
+                scaled_loss.backward(retain_graph=retain_graph)
         elif self.fp16_enabled():
-            self.optimizer.backward(loss)
+            self.optimizer.backward(loss, retain_graph=retain_graph)
         else:
-            loss.backward()
+            loss.backward(retain_graph=retain_graph)
 
         if self.wall_clock_breakdown():
             self.timers('backward_inner').stop()
